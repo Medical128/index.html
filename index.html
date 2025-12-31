@@ -1,0 +1,1226 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Testy: Stroop + TMT + DSST</title>
+  <style>
+    :root{
+      --bg:#0b0f19;
+      --card:#121a2a;
+      --muted:#9aa4b2;
+      --text:#e8eef7;
+      --border:rgba(255,255,255,.10);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --good:#2ecc71;
+      --bad:#ff5c5c;
+      --warn:#f5c542;
+      --accent:#2b59ff;
+      --accent2:#8ab4ff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% 0%, #1a2b6b22, transparent),
+                  radial-gradient(900px 500px at 80% 10%, #6b1a5b22, transparent),
+                  var(--bg);
+      color: var(--text);
+    }
+    .wrap{max-width:1020px; margin:24px auto; padding:0 16px;}
+    h1{margin:8px 0 10px; font-size:28px; letter-spacing:.2px;}
+    h2{margin:0}
+    .card{
+      background: linear-gradient(180deg, #141f34, #111a2b);
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow: var(--shadow);
+      padding:18px;
+      margin:14px 0;
+    }
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between;}
+    .btn{
+      background:#1f2e4f;
+      color:var(--text);
+      border:1px solid var(--border);
+      padding:10px 14px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      transition:.15s transform, .15s opacity, .15s border-color;
+      user-select:none;
+    }
+    .btn:hover{opacity:.95}
+    .btn:active{transform:scale(.98)}
+    .btn.primary{background:#2b59ff22; border-color:#2b59ff55;}
+    .btn.danger{background:#ff5c5c1a; border-color:#ff5c5c55;}
+    .btn.ghost{background:transparent;}
+    .small{color:var(--muted); font-size:13px; line-height:1.35}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted); font-size:13px;
+      background: rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+    .msg{
+      margin-top:12px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px 12px;
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      font-size:13px;
+      line-height:1.4;
+    }
+    .msg.ok{border-color: rgba(46,204,113,.35); color:#bff2d1; background: rgba(46,204,113,.08)}
+    .msg.err{border-color: rgba(255,92,92,.35); color:#ffd0d0; background: rgba(255,92,92,.08)}
+    .msg.warn{border-color: rgba(245,197,66,.35); color:#ffe9b5; background: rgba(245,197,66,.08)}
+    .grid2{display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; margin-top:12px;}
+    .stat{
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      background: rgba(0,0,0,.18);
+    }
+    .stat .k{color:var(--muted); font-size:13px}
+    .stat .v{font-size:22px; font-weight:900; margin-top:4px}
+
+    /* ====== screens ====== */
+    .screen{display:none;}
+    .screen.active{display:block;}
+
+    /* ====== Stroop ====== */
+    #stroop_stim{
+      font-size:66px;
+      font-weight:900;
+      text-align:center;
+      margin:22px 0 6px;
+      letter-spacing:1px;
+    }
+    #stroop_hint{ text-align:center; color:var(--muted); margin-bottom:14px; }
+    #stroop_progress{ text-align:center; color:var(--muted); font-size:13px; }
+    .tiles{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:12px;
+      margin-top:12px;
+    }
+    .tile{
+      border:1px solid var(--border);
+      background: #0f172a;
+      border-radius:16px;
+      padding:14px 10px;
+      min-height:64px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:18px;
+      font-weight:800;
+      cursor:pointer;
+      user-select:none;
+      transition: .12s transform, .12s opacity, .12s border-color;
+    }
+    .tile:hover{opacity:.96}
+    .tile:active{transform:scale(.985)}
+    .tile.disabled{opacity:.5; pointer-events:none}
+    .tile .dot{
+      width:12px; height:12px; border-radius:50%;
+      margin-right:10px; border:1px solid rgba(255,255,255,.25);
+    }
+    @media (min-width: 640px){
+      .tiles{grid-template-columns: repeat(4, minmax(0, 1fr));}
+      #stroop_stim{font-size:78px;}
+    }
+
+    /* ====== TMT ====== */
+    .tmtWrap{
+      position:relative;
+      width:100%;
+      height:min(72vh, 620px);
+      border:1px solid var(--border);
+      border-radius:16px;
+      background: rgba(0,0,0,.18);
+      overflow:hidden;
+      touch-action:none;
+    }
+    .tmtSvg{
+      position:absolute; inset:0;
+      width:100%; height:100%;
+    }
+    .tmtNode{
+      position:absolute;
+      width:44px; height:44px;
+      border-radius:999px;
+      border:2px solid rgba(255,255,255,.22);
+      background: rgba(15,23,42,.85);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      user-select:none;
+      cursor:pointer;
+      transform:translate(-50%,-50%);
+    }
+    .tmtNode.done{
+      border-color: rgba(46,204,113,.65);
+      box-shadow: 0 0 0 3px rgba(46,204,113,.12) inset;
+    }
+    .tmtNode.badClick{
+      border-color: rgba(255,92,92,.75);
+      box-shadow: 0 0 0 3px rgba(255,92,92,.12) inset;
+      animation: shake .18s linear 1;
+    }
+    @keyframes shake{
+      0%{transform:translate(-50%,-50%)}
+      25%{transform:translate(-50%,-50%) translateX(-2px)}
+      75%{transform:translate(-50%,-50%) translateX(2px)}
+      100%{transform:translate(-50%,-50%)}
+    }
+
+    /* ====== DSST ====== */
+    .dsstLegendWrap{
+      border:1px solid var(--border);
+      border-radius:16px;
+      background: rgba(0,0,0,.18);
+      padding:10px;
+      overflow:auto;
+    }
+    .dsstLegend{
+      display:grid;
+      grid-auto-flow:column;
+      grid-auto-columns: minmax(70px, 1fr);
+      gap:10px;
+      min-width: 680px; /* pozwala scroll na małych ekranach */
+      align-items:stretch;
+    }
+    .dsstPair{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:14px;
+      padding:10px 8px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      background: rgba(255,255,255,.02);
+    }
+    .dsstDigit{
+      font-weight:900;
+      font-size:18px;
+      color: var(--accent2);
+      margin-bottom:8px;
+    }
+    .dsstSymbol{
+      width:30px; height:30px;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .dsstBigDigit{
+      font-size:64px;
+      font-weight:1000;
+      text-align:center;
+      margin:14px 0 6px;
+      letter-spacing:1px;
+    }
+    .dsstTimer{
+      text-align:center;
+      color: var(--muted);
+      font-size:13px;
+      margin-bottom:10px;
+    }
+    .dsstChoices{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:12px;
+      margin-top:8px;
+    }
+    @media (min-width: 640px){
+      .dsstChoices{grid-template-columns: repeat(9, minmax(0, 1fr));}
+    }
+    .dsstChoice{
+      border:1px solid var(--border);
+      background: #0f172a;
+      border-radius:16px;
+      padding:12px 10px;
+      min-height:64px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      user-select:none;
+      transition:.12s transform, .12s opacity, .12s border-color, .12s box-shadow;
+    }
+    .dsstChoice:hover{opacity:.96}
+    .dsstChoice:active{transform:scale(.985)}
+    .dsstChoice.disabled{opacity:.55; pointer-events:none}
+    .dsstChoice.ok{
+      border-color: rgba(46,204,113,.65);
+      box-shadow: 0 0 0 3px rgba(46,204,113,.10) inset;
+    }
+    .dsstChoice.bad{
+      border-color: rgba(255,92,92,.65);
+      box-shadow: 0 0 0 3px rgba(255,92,92,.10) inset;
+    }
+
+    /* simple svg icons */
+    .ico{width:28px;height:28px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Testy poznawcze (web)</h1>
+
+  <div class="card">
+    <div class="row">
+      <div class="pill" id="global_pid">👤 ID: …</div>
+      <div class="row" style="gap:8px">
+        <button class="btn ghost" id="btn_newid">Wygeneruj nowe ID</button>
+      </div>
+    </div>
+    <div class="small" style="margin-top:8px">
+      To ID jest wspólne dla wszystkich testów na tej stronie (Stroop / TMT / DSST).
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div class="card screen active" id="screen_menu">
+    <div class="row">
+      <div>
+        <div class="pill">📌 Wybierz test</div>
+        <div class="small" style="margin-top:8px">Zapis do Supabase po zakończeniu testu.</div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <button class="btn primary" id="go_stroop">Start: Stroop</button>
+      <button class="btn primary" id="go_tmt">Start: Trail Making Test (TMT A/B)</button>
+      <button class="btn primary" id="go_dsst">Start: Digit Symbol Substitution (DSST)</button>
+    </div>
+
+    <div class="msg warn">
+      Nie wpisuj danych osobowych. Zapisujemy: czas, poprawność/błędy i surowe próby (JSON).
+    </div>
+  </div>
+
+  <!-- ===================== STROOP ===================== -->
+  <div class="card screen" id="screen_stroop_intro">
+    <div class="row">
+      <div>
+        <div class="pill">Stroop</div>
+        <div class="small" style="margin-top:8px">
+          Odpowiadasz na <b>kolor czcionki</b>, ignorujesz znaczenie słowa.
+        </div>
+      </div>
+      <div class="row" style="gap:8px">
+        <button class="btn" data-back>Powrót</button>
+        <button class="btn primary" id="stroop_start">Start</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card screen" id="screen_stroop_task">
+    <div class="row">
+      <div class="pill" id="stroop_pid_badge">👤 ID: ...</div>
+      <div class="pill" id="stroop_mode_badge">🧪 Próba: ...</div>
+    </div>
+    <div id="stroop_stim">+</div>
+    <div id="stroop_hint">Kliknij kafelek odpowiadający kolorowi czcionki</div>
+    <div id="stroop_progress"></div>
+    <div class="tiles" id="stroop_tiles"></div>
+  </div>
+
+  <div class="card screen" id="screen_stroop_done">
+    <div class="row">
+      <h2>Koniec ✅ (Stroop)</h2>
+      <div class="row" style="gap:8px">
+        <button class="btn" data-back>Powrót</button>
+        <button class="btn" id="stroop_restart">Uruchom ponownie</button>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="stat">
+        <div class="k">Poprawne odpowiedzi</div>
+        <div class="v" id="stroop_stat_correct">–</div>
+      </div>
+      <div class="stat">
+        <div class="k">Średni czas reakcji</div>
+        <div class="v" id="stroop_stat_meanrt">–</div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="stat">
+        <div class="k">Poprawne: średni RT (kongruentne)</div>
+        <div class="v" id="stroop_stat_congr">–</div>
+      </div>
+      <div class="stat">
+        <div class="k">Poprawne: średni RT (niekongruentne)</div>
+        <div class="v" id="stroop_stat_incongr">–</div>
+      </div>
+    </div>
+
+    <div class="msg" id="stroop_save_status">Zapisywanie wyniku…</div>
+    <div class="small" style="margin-top:10px" id="stroop_meta_line"></div>
+  </div>
+
+  <!-- ===================== TMT ===================== -->
+  <div class="card screen" id="screen_tmt_intro">
+    <div class="row">
+      <div>
+        <div class="pill">TMT (Trail Making Test)</div>
+        <div class="small" style="margin-top:8px">
+          Klikaj kółka <b>w poprawnej kolejności</b>. Kółka <b>podświetlają się dopiero po poprawnym kliknięciu</b>.
+        </div>
+      </div>
+      <div class="row" style="gap:8px">
+        <button class="btn" data-back>Powrót</button>
+        <button class="btn primary" id="tmt_start_a">Start TMT-A</button>
+        <button class="btn primary" id="tmt_start_b">Start TMT-B</button>
+      </div>
+    </div>
+    <div class="msg warn">
+      TMT-A: 1 → 2 → 3 … → 25. <br/>
+      TMT-B: 1 → A → 2 → B → 3 → C … (naprzemiennie).
+    </div>
+  </div>
+
+  <div class="card screen" id="screen_tmt_task">
+    <div class="row">
+      <div class="pill" id="tmt_pid_badge">👤 ID: ...</div>
+      <div class="pill" id="tmt_variant_badge">🧪 Wariant: ...</div>
+      <div class="pill" id="tmt_progress_badge">Postęp: ...</div>
+    </div>
+
+    <div class="tmtWrap" id="tmt_area">
+      <svg class="tmtSvg" id="tmt_svg" viewBox="0 0 1000 700" preserveAspectRatio="none">
+        <path id="tmt_path" d="" fill="none" stroke="rgba(138,180,255,.85)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <!-- nodes injected -->
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <div class="pill" id="tmt_time">⏱️ 0.0 s</div>
+      <div class="pill" id="tmt_errors">❌ Błędy: 0</div>
+      <div class="row" style="gap:8px">
+        <button class="btn" data-back>Powrót</button>
+        <button class="btn danger" id="tmt_reset">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card screen" id="screen_tmt_done">
+    <div class="row">
+      <h2>Koniec ✅ (TMT)</h2>
+      <div class="row" style="gap:8px">
+        <button class="btn" data-back>Powrót</button>
+        <button class="btn" id="tmt_restart">Uruchom ponownie</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="stat">
+        <div class="k">Czas</div>
+        <div class="v" id="tmt_stat_time">–</div>
+      </div>
+      <div class="stat">
+        <div class="k">Błędy</div>
+        <div class="v" id="tmt_stat_err">–</div>
+      </div>
+    </div>
+    <div class="msg" id="tmt_save_status">Zapisywanie wyniku…</div>
+  </div>
+
+  <!-- ===================== DSST ===================== -->
+  <div class="card screen" id="screen_dsst_intro">
+    <div class="row">
+      <div>
+        <div class="pill">DSST (Digit Symbol Substitution)</div>
+        <div class="small" style="margin-top:8px">
+          Zasada: u góry pojawia się <b>cyfra</b>. Klikasz <b>symbol</b>, który w legendzie odpowiada tej cyfrze.
+        </div>
+      </div>
+      <div class="row" style="gap:8px">
+        <button class="btn" data-back>Powrót</button>
+        <button class="btn primary" id="dsst_start">Start (90 s)</button>
+      </div>
+    </div>
+    <div class="msg warn">
+      Legenda u góry może przewijać się poziomo na telefonie (żeby 9 się mieściło).
+    </div>
+  </div>
+
+  <div class="card screen" id="screen_dsst_task">
+    <div class="row">
+      <div class="pill" id="dsst_pid_badge">👤 ID: ...</div>
+      <div class="pill" id="dsst_live">⏱️ 90 s · ✅ 0 · ❌ 0</div>
+      <div class="row" style="gap:8px">
+        <button class="btn" data-back>Powrót</button>
+      </div>
+    </div>
+
+    <div class="small" style="margin-top:10px; margin-bottom:8px">Legenda (mapa cyfr do symboli, losowana na sesję):</div>
+    <div class="dsstLegendWrap">
+      <div class="dsstLegend" id="dsst_legend"></div>
+    </div>
+
+    <div class="dsstBigDigit" id="dsst_digit">–</div>
+    <div class="dsstTimer" id="dsst_timer">Przygotuj się…</div>
+
+    <div class="small" style="margin-top:6px">Kliknij symbol:</div>
+    <div class="dsstChoices" id="dsst_choices"></div>
+
+    <div class="msg" id="dsst_hint" style="margin-top:12px">Klikaj jak najszybciej i poprawnie.</div>
+  </div>
+
+  <div class="card screen" id="screen_dsst_done">
+    <div class="row">
+      <h2>Koniec ✅ (DSST)</h2>
+      <div class="row" style="gap:8px">
+        <button class="btn" data-back>Powrót</button>
+        <button class="btn" id="dsst_restart">Uruchom ponownie</button>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="stat">
+        <div class="k">Poprawne</div>
+        <div class="v" id="dsst_stat_correct">–</div>
+      </div>
+      <div class="stat">
+        <div class="k">Błędy</div>
+        <div class="v" id="dsst_stat_errors">–</div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="stat">
+        <div class="k">Liczba prób</div>
+        <div class="v" id="dsst_stat_trials">–</div>
+      </div>
+      <div class="stat">
+        <div class="k">Średni RT (tylko poprawne)</div>
+        <div class="v" id="dsst_stat_meanrt">–</div>
+      </div>
+    </div>
+
+    <div class="msg" id="dsst_save_status">Zapisywanie wyniku…</div>
+  </div>
+
+</div>
+
+<script>
+  // ===================== SUPABASE CONFIG =====================
+  const SUPABASE_URL = "https://terrlrxwpmgpmrreahfy.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_VBr2qroPssFUslJso8FrMA_UqXhP_Hg";
+
+  // Twoje tabele:
+  const TABLE_STROOP = "wyniki_stroopa"; // istnieje
+  const TABLE_TMT    = "wyniki_tmt";     // dodasz SQL
+  const TABLE_DSST   = "wyniki_dsst";    // dodasz SQL
+
+  // ===================== HELPERS =====================
+  function randInt(n){ return Math.floor(Math.random() * n); }
+  function choice(arr){ return arr[randInt(arr.length)]; }
+  function mean(arr){ if(!arr.length) return null; return arr.reduce((a,b)=>a+b,0)/arr.length; }
+
+  function generateParticipantId(){
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    const rand = Math.random().toString(16).slice(2, 8).toUpperCase();
+    return `U-${y}${m}${day}-${rand}`;
+  }
+
+  function getPid(){
+    let pid = localStorage.getItem("pid_shared");
+    if(!pid){
+      pid = generateParticipantId();
+      localStorage.setItem("pid_shared", pid);
+    }
+    return pid;
+  }
+  function setPidNew(){
+    const pid = generateParticipantId();
+    localStorage.setItem("pid_shared", pid);
+    refreshPidBadges();
+  }
+
+  function refreshPidBadges(){
+    const pid = getPid();
+    document.getElementById("global_pid").textContent = `👤 ID: ${pid}`;
+    const ids = ["stroop_pid_badge","tmt_pid_badge","dsst_pid_badge"];
+    ids.forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.textContent = `👤 ID: ${pid}`;
+    });
+  }
+
+  function showScreen(id){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    refreshPidBadges();
+  }
+
+  async function supabaseInsert(table, payload){
+    if (!SUPABASE_URL || !SUPABASE_URL.startsWith("https://")) throw new Error("Brak/niepoprawny SUPABASE_URL");
+    if (!SUPABASE_ANON_KEY || !SUPABASE_ANON_KEY.startsWith("sb_")) throw new Error("Brak/niepoprawny SUPABASE_ANON_KEY");
+
+    const url = `${SUPABASE_URL}/rest/v1/${table}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal"
+      },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){
+      const txt = await res.text();
+      throw new Error(`Supabase insert failed: ${res.status} ${txt}`);
+    }
+  }
+
+  // nav buttons
+  document.querySelectorAll("[data-back]").forEach(btn=>{
+    btn.addEventListener("click", ()=> showScreen("screen_menu"));
+  });
+  document.getElementById("btn_newid").addEventListener("click", setPidNew);
+
+  document.getElementById("go_stroop").addEventListener("click", ()=>showScreen("screen_stroop_intro"));
+  document.getElementById("go_tmt").addEventListener("click", ()=>showScreen("screen_tmt_intro"));
+  document.getElementById("go_dsst").addEventListener("click", ()=>showScreen("screen_dsst_intro"));
+
+  // ===================== STROOP =====================
+  const COLORS = [
+    { name_en: "red",    css: "red",   pl: "Czerwony"  },
+    { name_en: "green",  css: "green", pl: "Zielony"   },
+    { name_en: "blue",   css: "blue",  pl: "Niebieski" },
+    { name_en: "yellow", css: "gold",  pl: "Żółty"     }
+  ];
+  const STROOP_TOTAL_TRIALS = 40;
+  const STROOP_CONGRUENT_RATE = 0.5;
+  const STROOP_FIX_MS = 350;
+  const STROOP_START_FIX_MS = 450;
+
+  let stroop_trials = [];
+  let stroop_trialIndex = 0;
+  let stroop_tStart = 0;
+  let stroop_currentTrial = null;
+  let stroop_collecting = false;
+
+  const elS_stim = document.getElementById("stroop_stim");
+  const elS_hint = document.getElementById("stroop_hint");
+  const elS_progress = document.getElementById("stroop_progress");
+  const elS_tiles = document.getElementById("stroop_tiles");
+  const elS_mode = document.getElementById("stroop_mode_badge");
+  const elS_stat_correct = document.getElementById("stroop_stat_correct");
+  const elS_stat_meanrt  = document.getElementById("stroop_stat_meanrt");
+  const elS_stat_congr   = document.getElementById("stroop_stat_congr");
+  const elS_stat_incongr = document.getElementById("stroop_stat_incongr");
+  const elS_save_status  = document.getElementById("stroop_save_status");
+  const elS_meta_line    = document.getElementById("stroop_meta_line");
+
+  function stroopMakeTrials(){
+    const out = [];
+    for (let i=0; i<STROOP_TOTAL_TRIALS; i++){
+      const ink = choice(COLORS);
+      const isCongruent = Math.random() < STROOP_CONGRUENT_RATE;
+      let word = ink;
+      if(!isCongruent){
+        do { word = choice(COLORS); } while(word.name_en === ink.name_en);
+      }
+      out.push({
+        nr: i+1,
+        ink_pl: ink.pl,
+        ink_css: ink.css,
+        word_pl: word.pl,
+        word_en: word.name_en,
+        ink_en: ink.name_en,
+        congruent: isCongruent,
+        response_pl: null,
+        correct: null,
+        rt_ms: null,
+        timestamp: null
+      });
+    }
+    return out;
+  }
+
+  function stroopBuildTiles(){
+    elS_tiles.innerHTML = "";
+    COLORS.forEach(c=>{
+      const btn = document.createElement("div");
+      btn.className = "tile";
+      btn.innerHTML = `<span class="dot" style="background:${c.css}"></span>${c.pl}`;
+      btn.addEventListener("click", ()=> stroopOnAnswer(c.pl));
+      elS_tiles.appendChild(btn);
+    });
+  }
+  function stroopSetTilesEnabled(enabled){
+    document.querySelectorAll("#stroop_tiles .tile").forEach(t=>{
+      t.classList.toggle("disabled", !enabled);
+    });
+  }
+  function stroopFixation(ms){
+    stroop_collecting = false;
+    stroopSetTilesEnabled(false);
+    elS_stim.textContent = "+";
+    elS_stim.style.color = "#e8eef7";
+    elS_hint.textContent = "Przygotuj się…";
+    return new Promise(res=>setTimeout(res, ms));
+  }
+  function stroopShowTrial(){
+    stroop_currentTrial = stroop_trials[stroop_trialIndex];
+    elS_stim.textContent = stroop_currentTrial.word_pl.toUpperCase();
+    elS_stim.style.color = stroop_currentTrial.ink_css;
+    elS_hint.textContent = "Kliknij kafelek odpowiadający kolorowi czcionki";
+    elS_progress.textContent = `Postęp: ${stroop_trialIndex + 1} / ${STROOP_TOTAL_TRIALS}`;
+    elS_mode.textContent = `🧪 Próba: ${stroop_trialIndex + 1} / ${STROOP_TOTAL_TRIALS}`;
+    stroop_tStart = performance.now();
+    stroop_collecting = true;
+    stroopSetTilesEnabled(true);
+  }
+  async function stroopOnAnswer(colorPl){
+    if(!stroop_collecting) return;
+    stroop_collecting = false;
+    stroopSetTilesEnabled(false);
+
+    const rt = Math.round(performance.now() - stroop_tStart);
+    stroop_currentTrial.response_pl = colorPl;
+    stroop_currentTrial.rt_ms = rt;
+    stroop_currentTrial.correct = (colorPl === stroop_currentTrial.ink_pl);
+    stroop_currentTrial.timestamp = new Date().toISOString();
+
+    await stroopFixation(STROOP_FIX_MS);
+    stroop_trialIndex++;
+    if(stroop_trialIndex >= STROOP_TOTAL_TRIALS) stroopFinish();
+    else stroopShowTrial();
+  }
+
+  async function stroopStart(){
+    stroop_trials = stroopMakeTrials();
+    stroop_trialIndex = 0;
+    stroopBuildTiles();
+    showScreen("screen_stroop_task");
+    await stroopFixation(STROOP_START_FIX_MS);
+    stroopShowTrial();
+  }
+
+  function stroopFinish(){
+    showScreen("screen_stroop_done");
+
+    const correctTrials = stroop_trials.filter(t=>t.correct);
+    const correctCount = correctTrials.length;
+
+    const rtsAll = correctTrials.map(t=>t.rt_ms).filter(Number.isFinite);
+    const mAll = mean(rtsAll);
+
+    const rtsCong = correctTrials.filter(t=>t.congruent).map(t=>t.rt_ms).filter(Number.isFinite);
+    const rtsInc  = correctTrials.filter(t=>!t.congruent).map(t=>t.rt_ms).filter(Number.isFinite);
+    const mCong = mean(rtsCong);
+    const mInc  = mean(rtsInc);
+
+    elS_stat_correct.textContent = `${correctCount} / ${STROOP_TOTAL_TRIALS}`;
+    elS_stat_meanrt.textContent  = (mAll!==null) ? `${Math.round(mAll)} ms` : "—";
+    elS_stat_congr.textContent   = (mCong!==null) ? `${Math.round(mCong)} ms` : "—";
+    elS_stat_incongr.textContent = (mInc!==null) ? `${Math.round(mInc)} ms` : "—";
+
+    elS_meta_line.textContent = `Zapis w bazie: ${TABLE_STROOP} · Przeglądarka: ${navigator.userAgent}`;
+
+    // UWAGA: 1:1 do Twojej istniejącej tabeli (z polskimi nazwami)
+    const payload = {
+      identyfikator_uczestnika: getPid(),
+      ua: navigator.userAgent,
+      "całkowita liczba prób": STROOP_TOTAL_TRIALS,
+      poprawne_próby: correctCount,
+      średni_rt_ms: (mAll!==null) ? Math.round(mAll) : null,
+      surowy: { trials: stroop_trials }
+    };
+
+    supabaseInsert(TABLE_STROOP, payload).then(()=>{
+      elS_save_status.className = "msg ok";
+      elS_save_status.textContent = "✅ Wynik zapisany w bazie (Supabase).";
+    }).catch(err=>{
+      console.error(err);
+      elS_save_status.className = "msg err";
+      elS_save_status.textContent =
+        "❌ Nie udało się zapisać wyniku (Stroop). Sprawdź RLS/polityki i Console (F12).";
+    });
+  }
+
+  document.getElementById("stroop_start").addEventListener("click", stroopStart);
+  document.getElementById("stroop_restart").addEventListener("click", ()=>showScreen("screen_stroop_intro"));
+
+  // ===================== TMT (A/B) =====================
+  const tmtArea = document.getElementById("tmt_area");
+  const tmtSvg  = document.getElementById("tmt_svg");
+  const tmtPath = document.getElementById("tmt_path");
+
+  const elT_variant = document.getElementById("tmt_variant_badge");
+  const elT_progress= document.getElementById("tmt_progress_badge");
+  const elT_time    = document.getElementById("tmt_time");
+  const elT_errors  = document.getElementById("tmt_errors");
+  const elT_doneTime= document.getElementById("tmt_stat_time");
+  const elT_doneErr = document.getElementById("tmt_stat_err");
+  const elT_save    = document.getElementById("tmt_save_status");
+
+  let tmtVariant = "A";
+  let tmtSequence = [];
+  let tmtNodes = [];       // {label, x, y, el}
+  let tmtIndex = 0;
+  let tmtErrors = 0;
+  let tmtStartTs = 0;
+  let tmtTimer = null;
+  let tmtLines = [];       // connected points
+  let tmtRawClicks = [];   // log
+
+  function tmtBuildSequence(variant){
+    if(variant === "A"){
+      return Array.from({length:25}, (_,i)=> String(i+1));
+    }
+    // B: 1-A-2-B-...-13-L (25 elementów)
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+    const out = [];
+    for(let i=1;i<=13;i++){
+      out.push(String(i));
+      if(out.length < 25) out.push(letters[i-1]); // A..L
+    }
+    return out.slice(0,25);
+  }
+
+  // równomierne rozmieszczenie: siatka + losowe przesunięcie w komórce, deterministiczne na variant+pid
+  function seededRand(seed){
+    let s = seed >>> 0;
+    return function(){
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    }
+  }
+  function hashStr(str){
+    let h=2166136261>>>0;
+    for(let i=0;i<str.length;i++){
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h>>>0;
+  }
+
+  function tmtGeneratePositions(n){
+    const W = tmtArea.clientWidth;
+    const H = tmtArea.clientHeight;
+    // layout in % (łatwe do SVG) - bazuj na viewBox 1000x700
+    const vw = 1000, vh = 700;
+    const cols = 5, rows = 5;
+    const pad = 70;
+    const cellW = (vw - pad*2) / (cols-1);
+    const cellH = (vh - pad*2) / (rows-1);
+
+    const rand = seededRand(hashStr(getPid()+"|"+tmtVariant));
+    const pts = [];
+    let idx = 0;
+
+    // bierz wszystkie komórki i tasuj, żeby rozkład był równy, ale kolejność losowa
+    const cells = [];
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) cells.push({r,c});
+    // shuffle
+    for(let i=cells.length-1;i>0;i--){
+      const j = Math.floor(rand()*(i+1));
+      [cells[i], cells[j]] = [cells[j], cells[i]];
+    }
+
+    while(idx<n){
+      const cell = cells[idx % cells.length];
+      const baseX = pad + cell.c*cellW;
+      const baseY = pad + cell.r*cellH;
+
+      // jitter w granicach komórki (ale nie za mocno)
+      const jx = (rand()-0.5)*Math.min(90, cellW*0.6);
+      const jy = (rand()-0.5)*Math.min(70, cellH*0.6);
+
+      pts.push({x: clamp(baseX + jx, 40, vw-40), y: clamp(baseY + jy, 40, vh-40)});
+      idx++;
+    }
+    return pts;
+  }
+
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+  function tmtClear(){
+    // remove nodes
+    tmtArea.querySelectorAll(".tmtNode").forEach(n=>n.remove());
+    tmtNodes = [];
+    tmtIndex = 0;
+    tmtErrors = 0;
+    tmtLines = [];
+    tmtRawClicks = [];
+    tmtPath.setAttribute("d","");
+    elT_errors.textContent = `❌ Błędy: 0`;
+    elT_time.textContent = `⏱️ 0.0 s`;
+    if(tmtTimer){ clearInterval(tmtTimer); tmtTimer=null; }
+  }
+
+  function tmtDrawPath(){
+    if(tmtLines.length < 2){ tmtPath.setAttribute("d",""); return; }
+    const d = tmtLines.map((p,i)=> (i===0?`M ${p.x} ${p.y}`:`L ${p.x} ${p.y}`)).join(" ");
+    tmtPath.setAttribute("d", d);
+  }
+
+  function tmtStart(variant){
+    tmtVariant = variant;
+    tmtSequence = tmtBuildSequence(variant);
+    elT_variant.textContent = `🧪 Wariant: TMT-${variant}`;
+    showScreen("screen_tmt_task");
+
+    tmtClear();
+    const pts = tmtGeneratePositions(tmtSequence.length);
+
+    // nodes in DOM (positions in SVG coords 1000x700)
+    tmtSequence.forEach((label,i)=>{
+      const pt = pts[i];
+      const div = document.createElement("div");
+      div.className = "tmtNode";
+      div.textContent = label;
+      // convert SVG coords to percent for absolute placement
+      div.style.left = (pt.x/1000*100) + "%";
+      div.style.top  = (pt.y/700*100) + "%";
+      div.addEventListener("click", ()=> tmtOnClick(i));
+      tmtArea.appendChild(div);
+
+      tmtNodes.push({label, x: pt.x, y: pt.y, el: div});
+    });
+
+    elT_progress.textContent = `Postęp: 0 / ${tmtSequence.length}`;
+    tmtStartTs = performance.now();
+    tmtTimer = setInterval(()=>{
+      const s = (performance.now()-tmtStartTs)/1000;
+      elT_time.textContent = `⏱️ ${s.toFixed(1)} s`;
+    }, 100);
+  }
+
+  function tmtOnClick(nodeIndex){
+    const expectedLabel = tmtSequence[tmtIndex];
+    const clickedLabel  = tmtNodes[nodeIndex].label;
+
+    const nowIso = new Date().toISOString();
+    tmtRawClicks.push({ts: nowIso, expected: expectedLabel, clicked: clickedLabel});
+
+    if(clickedLabel !== expectedLabel){
+      tmtErrors++;
+      elT_errors.textContent = `❌ Błędy: ${tmtErrors}`;
+      const el = tmtNodes[nodeIndex].el;
+      el.classList.remove("badClick");
+      void el.offsetWidth; // restart anim
+      el.classList.add("badClick");
+      return;
+    }
+
+    // poprawny klik: dopiero teraz podświetlamy i rysujemy linię
+    const node = tmtNodes[nodeIndex];
+    node.el.classList.add("done");
+
+    tmtLines.push({x: node.x, y: node.y});
+    tmtDrawPath();
+
+    tmtIndex++;
+    elT_progress.textContent = `Postęp: ${tmtIndex} / ${tmtSequence.length}`;
+
+    if(tmtIndex >= tmtSequence.length){
+      tmtFinish();
+    }
+  }
+
+  function tmtFinish(){
+    if(tmtTimer){ clearInterval(tmtTimer); tmtTimer=null; }
+    const timeMs = Math.round(performance.now() - tmtStartTs);
+
+    showScreen("screen_tmt_done");
+    elT_doneTime.textContent = `${(timeMs/1000).toFixed(1)} s`;
+    elT_doneErr.textContent  = `${tmtErrors}`;
+
+    elT_save.className = "msg";
+    elT_save.textContent = "Zapisywanie wyniku…";
+
+    const payload = {
+      participant_id: getPid(),
+      ua: navigator.userAgent,
+      variant: tmtVariant,
+      total_targets: tmtSequence.length,
+      time_ms: timeMs,
+      errors: tmtErrors,
+      raw: {
+        sequence: tmtSequence,
+        positions: tmtNodes.map(n=>({label:n.label, x:n.x, y:n.y})),
+        clicks: tmtRawClicks,
+        path: tmtLines
+      }
+    };
+
+    supabaseInsert(TABLE_TMT, payload).then(()=>{
+      elT_save.className = "msg ok";
+      elT_save.textContent = "✅ Wynik zapisany w bazie (TMT).";
+    }).catch(err=>{
+      console.error(err);
+      elT_save.className = "msg err";
+      elT_save.textContent = "❌ Nie udało się zapisać wyniku (TMT). Sprawdź czy wykonałeś SQL dla wyniki_tmt i RLS.";
+    });
+  }
+
+  document.getElementById("tmt_start_a").addEventListener("click", ()=>tmtStart("A"));
+  document.getElementById("tmt_start_b").addEventListener("click", ()=>tmtStart("B"));
+  document.getElementById("tmt_reset").addEventListener("click", ()=>tmtStart(tmtVariant));
+  document.getElementById("tmt_restart").addEventListener("click", ()=>showScreen("screen_tmt_intro"));
+
+  // ===================== DSST =====================
+  // Symbole jako proste SVG (żeby wyglądało czytelnie na mobile)
+  const SYMBOLS = [
+    { id:"sym_star",  svg: svgStar()  },
+    { id:"sym_x",     svg: svgX()     },
+    { id:"sym_tri",   svg: svgTri()   },
+    { id:"sym_plus",  svg: svgPlus()  },
+    { id:"sym_hex",   svg: svgHex()   },
+    { id:"sym_circ",  svg: svgCirc()  },
+    { id:"sym_square",svg: svgSquare()},
+    { id:"sym_diam",  svg: svgDiam()  },
+    { id:"sym_eq",    svg: svgEq()    }
+  ];
+
+  const DSST_DURATION_S = 90;
+  let dsstMap = new Map();  // digit -> symbolId
+  let dsstInverse = new Map(); // symbolId -> digit
+  let dsstRunning = false;
+  let dsstEndsAt = 0;
+  let dsstCurrentDigit = 1;
+
+  let dsstTrials = []; // {digit, symbolClicked, correct, rt_ms, ts}
+  let dsstCorrect = 0;
+  let dsstErrors = 0;
+  let dsstStimStart = 0;
+  let dsstTickTimer = null;
+
+  const elD_legend = document.getElementById("dsst_legend");
+  const elD_digit  = document.getElementById("dsst_digit");
+  const elD_timer  = document.getElementById("dsst_timer");
+  const elD_live   = document.getElementById("dsst_live");
+  const elD_choices= document.getElementById("dsst_choices");
+  const elD_hint   = document.getElementById("dsst_hint");
+
+  const elD_stat_correct = document.getElementById("dsst_stat_correct");
+  const elD_stat_errors  = document.getElementById("dsst_stat_errors");
+  const elD_stat_trials  = document.getElementById("dsst_stat_trials");
+  const elD_stat_meanrt  = document.getElementById("dsst_stat_meanrt");
+  const elD_save         = document.getElementById("dsst_save_status");
+
+  function dsstShuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = randInt(i+1);
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function dsstBuildMapping(){
+    // digits 1..9 map to shuffled symbol ids
+    const digits = [1,2,3,4,5,6,7,8,9];
+    const symIds = dsstShuffle(SYMBOLS.map(s=>s.id));
+    dsstMap = new Map();
+    dsstInverse = new Map();
+    digits.forEach((d,i)=>{
+      dsstMap.set(d, symIds[i]);
+      dsstInverse.set(symIds[i], d);
+    });
+  }
+
+  function dsstRenderLegend(){
+    elD_legend.innerHTML = "";
+    for(let d=1; d<=9; d++){
+      const symId = dsstMap.get(d);
+      const sym = SYMBOLS.find(s=>s.id===symId);
+      const item = document.createElement("div");
+      item.className = "dsstPair";
+      item.innerHTML = `
+        <div class="dsstDigit">${d}</div>
+        <div class="dsstSymbol">${sym.svg}</div>
+      `;
+      elD_legend.appendChild(item);
+    }
+  }
+
+  function dsstRenderChoices(){
+    elD_choices.innerHTML = "";
+    // ważne: użytkownik klika SYMBOL (nie cyfrę)
+    SYMBOLS.forEach(sym=>{
+      const btn = document.createElement("div");
+      btn.className = "dsstChoice";
+      btn.dataset.sym = sym.id;
+      btn.innerHTML = sym.svg;
+      btn.addEventListener("click", ()=> dsstChoose(sym.id, btn));
+      elD_choices.appendChild(btn);
+    });
+  }
+
+  function dsstSetChoicesEnabled(enabled){
+    document.querySelectorAll(".dsstChoice").forEach(b=>{
+      b.classList.toggle("disabled", !enabled);
+    });
+  }
+
+  function dsstNextDigit(){
+    dsstCurrentDigit = 1 + randInt(9);
+    elD_digit.textContent = dsstCurrentDigit;
+    dsstStimStart = performance.now();
+  }
+
+  function dsstUpdateLive(){
+    const left = Math.max(0, Math.ceil((dsstEndsAt - Date.now())/1000));
+    elD_live.textContent = `⏱️ ${left} s · ✅ ${dsstCorrect} · ❌ ${dsstErrors}`;
+    elD_timer.textContent = dsstRunning ? `Pozostało: ${left} s` : "Zakończono";
+  }
+
+  function dsstStart(){
+    dsstBuildMapping();
+    dsstRenderLegend();
+    dsstRenderChoices();
+
+    dsstTrials = [];
+    dsstCorrect = 0;
+    dsstErrors = 0;
+    dsstRunning = true;
+
+    showScreen("screen_dsst_task");
+
+    dsstEndsAt = Date.now() + DSST_DURATION_S*1000;
+    dsstSetChoicesEnabled(true);
+    dsstNextDigit();
+    dsstUpdateLive();
+
+    if(dsstTickTimer) clearInterval(dsstTickTimer);
+    dsstTickTimer = setInterval(()=>{
+      if(!dsstRunning) return;
+      dsstUpdateLive();
+      if(Date.now() >= dsstEndsAt){
+        dsstFinish();
+      }
+    }, 200);
+
+    elD_hint.className = "msg";
+    elD_hint.textContent = "Klikaj jak najszybciej i poprawnie.";
+  }
+
+  function dsstFlash(btn, ok){
+    btn.classList.remove("ok","bad");
+    void btn.offsetWidth;
+    btn.classList.add(ok ? "ok" : "bad");
+    setTimeout(()=>btn.classList.remove("ok","bad"), 180);
+  }
+
+  function dsstChoose(symbolId, btnEl){
+    if(!dsstRunning) return;
+
+    const rt = Math.round(performance.now() - dsstStimStart);
+    const expectedSymbol = dsstMap.get(dsstCurrentDigit);
+    const ok = (symbolId === expectedSymbol);
+
+    dsstTrials.push({
+      digit: dsstCurrentDigit,
+      expected_symbol: expectedSymbol,
+      clicked_symbol: symbolId,
+      correct: ok,
+      rt_ms: rt,
+      ts: new Date().toISOString()
+    });
+
+    if(ok) dsstCorrect++;
+    else dsstErrors++;
+
+    dsstFlash(btnEl, ok);
+    dsstUpdateLive();
+    dsstNextDigit();
+  }
+
+  function dsstFinish(){
+    dsstRunning = false;
+    dsstSetChoicesEnabled(false);
+    if(dsstTickTimer){ clearInterval(dsstTickTimer); dsstTickTimer=null; }
+    showScreen("screen_dsst_done");
+
+    const totalTrials = dsstTrials.length;
+    const correctRts = dsstTrials.filter(t=>t.correct).map(t=>t.rt_ms).filter(Number.isFinite);
+    const m = mean(correctRts);
+
+    elD_stat_correct.textContent = `${dsstCorrect}`;
+    elD_stat_errors.textContent  = `${dsstErrors}`;
+    elD_stat_trials.textContent  = `${totalTrials}`;
+    elD_stat_meanrt.textContent  = (m!==null) ? `${Math.round(m)} ms` : "—";
+
+    elD_save.className = "msg";
+    elD_save.textContent = "Zapisywanie wyniku…";
+
+    const payload = {
+      participant_id: getPid(),
+      ua: navigator.userAgent,
+      duration_s: DSST_DURATION_S,
+      total_trials: totalTrials,
+      correct: dsstCorrect,
+      errors: dsstErrors,
+      mean_rt_ms: (m!==null) ? Math.round(m) : null,
+      raw: {
+        mapping: Object.fromEntries(Array.from(dsstMap.entries()).map(([d,s])=>[String(d), s])),
+        trials: dsstTrials
+      }
+    };
+
+    supabaseInsert(TABLE_DSST, payload).then(()=>{
+      elD_save.className = "msg ok";
+      elD_save.textContent = "✅ Wynik zapisany w bazie (DSST).";
+    }).catch(err=>{
+      console.error(err);
+      elD_save.className = "msg err";
+      elD_save.textContent = "❌ Nie udało się zapisać wyniku (DSST). Sprawdź czy wykonałeś SQL dla wyniki_dsst i RLS.";
+    });
+  }
+
+  document.getElementById("dsst_start").addEventListener("click", dsstStart);
+  document.getElementById("dsst_restart").addEventListener("click", ()=>showScreen("screen_dsst_intro"));
+
+  // ===================== SYMBOL SVGs =====================
+  function svgWrap(inner){
+    return `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="rgba(232,238,247,.95)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+  }
+  function svgStar(){
+    return svgWrap(`<path d="M12 2l2.7 6.2L21 9l-5 4.2L17.4 20 12 16.8 6.6 20 8 13.2 3 9l6.3-.8L12 2z"/>`);
+  }
+  function svgX(){
+    return svgWrap(`<path d="M6 6l12 12"/><path d="M18 6L6 18"/>`);
+  }
+  function svgTri(){
+    return svgWrap(`<path d="M12 4l9 16H3L12 4z"/>`);
+  }
+  function svgPlus(){
+    return svgWrap(`<path d="M12 5v14"/><path d="M5 12h14"/>`);
+  }
+  function svgHex(){
+    return svgWrap(`<path d="M8 3h8l5 9-5 9H8L3 12 8 3z"/>`);
+  }
+  function svgCirc(){
+    return svgWrap(`<circle cx="12" cy="12" r="8"/>`);
+  }
+  function svgSquare(){
+    return svgWrap(`<rect x="5" y="5" width="14" height="14" rx="1"/>`);
+  }
+  function svgDiam(){
+    return svgWrap(`<path d="M12 3l8 9-8 9-8-9 8-9z"/>`);
+  }
+  function svgEq(){
+    return svgWrap(`<path d="M6 10h12"/><path d="M6 14h12"/>`);
+  }
+
+  // ===================== INIT =====================
+  refreshPidBadges();
+  showScreen("screen_menu");
+</script>
+</body>
+</html>
